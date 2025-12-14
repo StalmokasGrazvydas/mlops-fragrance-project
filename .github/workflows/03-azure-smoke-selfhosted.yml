@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Azure context check
-        shell: pwsh
+        shell: powershell
         run: |
           az account show
           az group show -n rg-nathan-mpops
