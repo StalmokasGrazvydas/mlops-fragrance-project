@@ -1,0 +1,4 @@
+data/*.json
+data/*.jsonl
+data/*.ndjson
+data/*.csv

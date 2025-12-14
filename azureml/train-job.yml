@@ -1,0 +1,30 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+
+display_name: fragrance-sentiment-train
+experiment_name: fragrance-sentiment-exp
+
+code: .
+
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
+  conda_file: azureml/conda.yml
+
+command: >-
+  python src/training/train.py
+  --input_path ${{inputs.input_data}}
+  --model_out ${{outputs.model_output}}/model.pkl
+  --metrics_out ${{outputs.metrics_output}}/metrics.json
+
+inputs:
+  input_data:
+    type: uri_file
+    path: azureml:home-kitchen-5@latest
+
+outputs:
+  model_output:
+    type: uri_folder
+  metrics_output:
+    type: uri_folder
+
+compute: azureml:cpu-cluster
