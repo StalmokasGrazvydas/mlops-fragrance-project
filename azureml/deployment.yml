@@ -22,10 +22,11 @@ $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.sch
 name: blue
 endpoint_name: fragrance-sentiment-endpoint
 
-model: azureml:fragrance-sentiment-logreg@1
+model: azureml:fragrance-sentiment-logreg:10
+
 
 environment:
-  image: mcr.microsoft.com/azureml/minimal-ubuntu20.04-py38-cpu-inference
+  image: mcr.microsoft.com/azureml/minimal-ubuntu22.04-py39-cpu-inference:latest
   conda_file: conda-infer.yml
 
 code_configuration:
@@ -37,5 +38,7 @@ instance_count: 1
 
 environment_variables:
   INFERENCE_LOG_CONTAINER: inference-logs
+  AZURE_STORAGE_CONNECTION_STRING: ""
+
 
 
