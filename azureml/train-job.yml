@@ -4,7 +4,7 @@ type: command
 display_name: fragrance-sentiment-train
 experiment_name: fragrance-sentiment-exp
 
-code: .
+code: ..
 
 environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
