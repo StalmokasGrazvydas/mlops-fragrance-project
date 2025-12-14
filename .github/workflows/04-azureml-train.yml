@@ -38,49 +38,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Submit training job to Azure ML
+        id: submit
+        shell: powershell
+        run: |
+          $jobName = az ml job create `
+            --file azureml/train-job.yml `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas `
+            --query name -o tsv
+
+          if (-not $jobName) { throw "Job submission failed: no job name returned." }
+
+          "job_name=$jobName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Submitted Azure ML job: $jobName"
+
       - name: Wait for job to complete (poll)
         shell: powershell
         run: |
+          $jobName = "${{ steps.submit.outputs.job_name }}"
+          if (-not $jobName) { throw "Missing job name from submit step." }
+
           $maxMinutes = 60
           $sleepSeconds = 20
           $deadline = (Get-Date).AddMinutes($maxMinutes)
 
           while ((Get-Date) -lt $deadline) {
             $status = az ml job show `
-              --name $env:JOB_NAME `
+              --name $jobName `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas `
               --query status -o tsv
 
-            Write-Host "Job $env:JOB_NAME status: $status"
+            Write-Host "Job $jobName status: $status"
 
             if ($status -in @("Completed", "Failed", "Canceled")) { break }
-
             Start-Sleep -Seconds $sleepSeconds
           }
 
           if (-not $status) { throw "Could not read job status." }
           if ($status -ne "Completed") { throw "Azure ML job finished with status: $status" }
 
-      - name: Wait for job to complete
-        shell: powershell
-        run: |
-          az ml job wait `
-            --name $env:JOB_NAME `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas
-
       - name: Register model from job output
         shell: powershell
         run: |
+          $jobName = "${{ steps.submit.outputs.job_name }}"
+          if (-not $jobName) { throw "Missing job name from submit step." }
+
           $version = "${{ github.run_number }}"
 
           az ml model create `
             --name fragrance-sentiment-logreg `
             --version $version `
-            --path "azureml://jobs/$($env:JOB_NAME)/outputs/model_output/" `
+            --path "azureml://jobs/$jobName/outputs/model_output/" `
             --type custom_model `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas
 
-          Write-Host "Registered model fragrance-sentiment-logreg:$version"
+          Write-Host "Registered model fragrance-sentiment-logreg:$version from job $jobName"
