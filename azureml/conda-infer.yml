@@ -2,12 +2,13 @@ name: fragrance-infer-env
 channels:
   - conda-forge
 dependencies:
-  - python=3.8
+  - python=3.10
   - pip
   - pip:
-      - azureml-inference-server-http
-      - azure-storage-blob
-      - scikit-learn
-      - joblib
-      - numpy
-      - pandas
+      - azureml-inference-server-http==1.3.4
+      - azure-storage-blob==12.26.0
+      - numpy==1.26.4
+      - pandas==2.2.3
+      - scipy==1.13.1
+      - scikit-learn==1.7.2
+      - joblib==1.4.2
