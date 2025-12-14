@@ -12,6 +12,8 @@ on:
 jobs:
   deploy:
     runs-on: [self-hosted, windows, mlops]
+    env:
+      AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +43,7 @@ jobs:
             Write-Host "Endpoint already exists: $endpointName"
           }
 
-      - name: Create or update deployment (idempotent) + inject secrets
+      - name: Create or update deployment (idempotent)
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -65,8 +67,7 @@ jobs:
               --endpoint-name $endpointName `
               --file azureml/deployment.yml `
               --resource-group rg-nathan-mpops `
-              --workspace-name mlops-grazvydas `
-              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+              --workspace-name mlops-grazvydas
           } else {
             Write-Host "Updating deployment: $deploymentName"
             az ml online-deployment update `
@@ -74,8 +75,7 @@ jobs:
               --endpoint-name $endpointName `
               --file azureml/deployment.yml `
               --resource-group rg-nathan-mpops `
-              --workspace-name mlops-grazvydas `
-              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+              --workspace-name mlops-grazvydas
           }
 
       - name: Route 100% traffic to blue
