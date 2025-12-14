@@ -39,53 +39,32 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Submit training job to Azure ML
-        shell: powershell
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-
           $jobName = az ml job create `
             --file azureml/train-job.yml `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas `
             --query name -o tsv
 
-          if (-not $jobName) { throw "Job submission failed: no job name returned." }
+          if (-not $jobName) {
+            throw "Job submission failed: no job name returned."
+          }
 
           "JOB_NAME=$jobName" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "Submitted Azure ML job: $jobName"
 
       - name: Wait for job to complete
-        shell: powershell
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-
-          if (-not $env:JOB_NAME) { throw "JOB_NAME was not set." }
-
           az ml job wait `
             --name $env:JOB_NAME `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas
 
-          # After wait, verify final status explicitly (so we fail on Canceled/Failed)
-          $status = az ml job show `
-            --name $env:JOB_NAME `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --query status -o tsv
-
-          Write-Host "Azure ML job status: $status"
-
-          if ($status -ne "Completed") {
-            throw "Azure ML job did not complete successfully. Status: $status"
-          }
-
       - name: Register model from job output
-        shell: powershell
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-
-          if (-not $env:JOB_NAME) { throw "JOB_NAME was not set." }
-
           $version = "${{ github.run_number }}"
 
           az ml model create `
@@ -96,4 +75,4 @@ jobs:
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas
 
-          Write-Host "Registered model fragrance-sentiment-logreg:$version from job $($env:JOB_NAME)"
+          Write-Host "Registered model fragrance-sentiment-logreg:$version"

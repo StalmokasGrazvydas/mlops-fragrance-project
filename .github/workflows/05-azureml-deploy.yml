@@ -16,85 +16,41 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create endpoint (idempotent)
-        shell: powershell
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
+          $endpointName = "fragrance-sentiment-endpoint"
 
-          # Read endpoint name from YAML (recommended: keep it consistent)
-          $endpointName = (Get-Content azureml/endpoint.yml | Select-String -Pattern '^name:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
-          if (-not $endpointName) { throw "Could not parse endpoint name from azureml/endpoint.yml" }
-
-          Write-Host "Endpoint name: $endpointName"
-
-          $existing = az ml online-endpoint show `
+          $exists = az ml online-endpoint show `
             --name $endpointName `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas `
             --query name -o tsv 2>$null
 
-          if ($existing) {
-            Write-Host "Endpoint already exists: $existing"
-          } else {
-            Write-Host "Creating endpoint..."
+          if (-not $exists) {
+            Write-Host "Creating endpoint $endpointName"
             az ml online-endpoint create `
               --file azureml/endpoint.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas
           }
+          else {
+            Write-Host "Endpoint already exists"
+          }
 
-          "ENDPOINT_NAME=$endpointName" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-      - name: Create or update deployment (idempotent)
-        shell: powershell
+      - name: Create or update deployment
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-
-          if (-not $env:ENDPOINT_NAME) { throw "ENDPOINT_NAME was not set." }
-
-          # Read deployment name from YAML
-          $deploymentName = (Get-Content azureml/deployment.yml | Select-String -Pattern '^name:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
-          if (-not $deploymentName) { throw "Could not parse deployment name from azureml/deployment.yml" }
-
-          Write-Host "Deployment name: $deploymentName"
-          "DEPLOYMENT_NAME=$deploymentName" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-          az ml online-deployment create-or-update `
+          az ml online-deployment create `
             --file azureml/deployment.yml `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas `
-            --set endpoint_name=$env:ENDPOINT_NAME `
             --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
 
       - name: Route 100% traffic to deployment
-        shell: powershell
+        shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-          if (-not $env:ENDPOINT_NAME) { throw "ENDPOINT_NAME was not set." }
-          if (-not $env:DEPLOYMENT_NAME) { throw "DEPLOYMENT_NAME was not set." }
-
           az ml online-endpoint update `
-            --name $env:ENDPOINT_NAME `
+            --name fragrance-sentiment-endpoint `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas `
-            --traffic "$($env:DEPLOYMENT_NAME)=100"
-
-      - name: Print scoring URI + key
-        shell: powershell
-        run: |
-          $ErrorActionPreference = "Stop"
-          if (-not $env:ENDPOINT_NAME) { throw "ENDPOINT_NAME was not set." }
-
-          $uri = az ml online-endpoint show `
-            --name $env:ENDPOINT_NAME `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --query scoring_uri -o tsv
-
-          $key = az ml online-endpoint get-credentials `
-            --name $env:ENDPOINT_NAME `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --query primaryKey -o tsv
-
-          Write-Host "SCORING_URI=$uri"
-          Write-Host "PRIMARY_KEY=$key"
+            --traffic blue=100
