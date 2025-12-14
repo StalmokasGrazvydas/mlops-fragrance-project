@@ -29,7 +29,8 @@ on:
   push:
     paths:
       - "src/training/**"
-      - "azureml/**"
+      - "azureml/train-job.yml"
+      - "azureml/conda.yml"
 
 jobs:
   train:
