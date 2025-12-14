@@ -1,3 +1,27 @@
+# name: Azure ML Training
+
+# on:
+#   workflow_dispatch:
+#   push:
+#     paths:
+#       - "src/training/**"
+#       - "azureml/**"
+
+# jobs:
+#   train:
+#     runs-on: [self-hosted, windows, mlops]
+
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Submit training job to Azure ML
+#         shell: powershell
+#         run: |
+#           az ml job create `
+#             --file azureml/train-job.yml `
+#             --resource-group rg-nathan-mpops `
+#             --workspace-name mlops-grazvydas
+
 name: Azure ML Training
 
 on:
@@ -17,7 +41,36 @@ jobs:
       - name: Submit training job to Azure ML
         shell: powershell
         run: |
-          az ml job create `
+          $jobName = az ml job create `
             --file azureml/train-job.yml `
             --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas `
+            --query name -o tsv
+
+          if (-not $jobName) { throw "Job submission failed: no job name returned." }
+
+          "JOB_NAME=$jobName" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Submitted Azure ML job: $jobName"
+
+      - name: Wait for job to complete
+        shell: pwsh
+        run: |
+          az ml job wait `
+            --name $env:JOB_NAME `
+            --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas
+
+      - name: Register model from job output
+        shell: pwsh
+        run: |
+          $version = "${{ github.run_number }}"
+
+          az ml model create `
+            --name fragrance-sentiment-logreg `
+            --version $version `
+            --path "azureml://jobs/$($env:JOB_NAME)/outputs/model_output/" `
+            --type custom_model `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas
+
+          Write-Host "Registered model fragrance-sentiment-logreg:$version from job $($env:JOB_NAME)"
