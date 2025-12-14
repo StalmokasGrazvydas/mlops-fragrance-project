@@ -6,7 +6,7 @@ model: azureml:fragrance-sentiment-logreg@latest
 
 environment:
   image: mcr.microsoft.com/azureml/minimal-ubuntu20.04-py38-cpu-inference
-  conda_file: conda.yml
+  conda_file: ../azureml/conda.yml
 
 code_configuration:
   code: src/inference
