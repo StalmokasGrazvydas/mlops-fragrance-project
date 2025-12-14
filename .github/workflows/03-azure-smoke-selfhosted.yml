@@ -1,0 +1,21 @@
+name: Azure Smoke Test (Self-hosted)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, windows, mlops]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Azure context check
+        shell: pwsh
+        run: |
+          az account show
+          az group show -n rg-nathan-mpops
+          az ml workspace show -n mlops-grazvydas -g rg-nathan-mpops
+          az acr show -n 10f02e0e192b40bdb676bc773f16f9ab -g rg-nathan-mpops
+          az keyvault show -n mlopsgrazvydas5429479322 -g rg-nathan-mpops
