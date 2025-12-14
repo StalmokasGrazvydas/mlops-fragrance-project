@@ -1,0 +1,35 @@
+name: Azure ML Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/inference/**"
+      - "azureml/deployment.yml"
+      - "azureml/endpoint.yml"
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows, mlops]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create endpoint (idempotent)
+        shell: powershell
+        run: |
+          az ml online-endpoint create `
+            --file azureml/endpoint.yml `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas `
+            --only-show-errors `
+            || echo "Endpoint already exists"
+
+      - name: Deploy model
+        shell: powershell
+        run: |
+          az ml online-deployment create `
+            --file azureml/deployment.yml `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas `
+            --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
