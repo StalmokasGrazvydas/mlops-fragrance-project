@@ -7,6 +7,7 @@ on:
       - "src/inference/**"
       - "azureml/deployment.yml"
       - "azureml/endpoint.yml"
+      - "azureml/conda-infer.yml"
 
 jobs:
   deploy:

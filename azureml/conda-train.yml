@@ -1,0 +1,14 @@
+name: fragrance-inference-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pip
+  - pip:
+      # - azureml-inference-server-http
+      - scikit-learn
+      - joblib
+      - numpy
+      - pandas
+      - scipy
+      - azure-storage-blob

@@ -1,4 +1,4 @@
-name: fragrance-inference-env
+name: fragrance-infer-env
 channels:
   - conda-forge
 dependencies:
@@ -6,9 +6,8 @@ dependencies:
   - pip
   - pip:
       - azureml-inference-server-http
+      - azure-storage-blob
       - scikit-learn
       - joblib
       - numpy
       - pandas
-      - scipy
-      - azure-storage-blob

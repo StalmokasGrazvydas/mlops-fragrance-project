@@ -30,8 +30,7 @@ on:
     paths:
       - "src/training/**"
       - "azureml/train-job.yml"
-      - "azureml/conda.yml"
-
+      - "azureml/conda-train.yml"
 jobs:
   train:
     runs-on: [self-hosted, windows, mlops]
