@@ -43,6 +43,18 @@ jobs:
             Write-Host "Endpoint already exists: $endpointName"
           }
 
+      - name: Render deployment.yml with secrets (runtime only)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $src = "azureml/deployment.yml"
+          $dst = "azureml/deployment.runtime.yml"
+
+          $content = Get-Content $src -Raw
+          $content = $content.Replace("__AZURE_STORAGE_CONNECTION_STRING__", $env:AZURE_STORAGE_CONNECTION_STRING)
+          Set-Content -Path $dst -Value $content -Encoding utf8
+
       - name: Create or update deployment (idempotent)
         shell: powershell
         run: |
@@ -65,7 +77,7 @@ jobs:
             az ml online-deployment create `
               --name $deploymentName `
               --endpoint-name $endpointName `
-              --file azureml/deployment.yml `
+              --file azureml/deployment.runtime.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas
           } else {
@@ -73,7 +85,7 @@ jobs:
             az ml online-deployment update `
               --name $deploymentName `
               --endpoint-name $endpointName `
-              --file azureml/deployment.yml `
+              --file azureml/deployment.runtime.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas
           }
