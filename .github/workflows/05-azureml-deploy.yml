@@ -18,39 +18,82 @@ jobs:
       - name: Create endpoint (idempotent)
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           $endpointName = "fragrance-sentiment-endpoint"
 
-          $exists = az ml online-endpoint show `
-            --name $endpointName `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --query name -o tsv 2>$null
+          $exists = $null
+          try {
+            $exists = az ml online-endpoint show `
+              --name $endpointName `
+              --resource-group rg-nathan-mpops `
+              --workspace-name mlops-grazvydas `
+              --query name -o tsv 2>$null
+          } catch {}
 
           if (-not $exists) {
-            Write-Host "Creating endpoint $endpointName"
+            Write-Host "Creating endpoint: $endpointName"
             az ml online-endpoint create `
               --file azureml/endpoint.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas
-          }
-          else {
-            Write-Host "Endpoint already exists"
+          } else {
+            Write-Host "Endpoint already exists: $endpointName"
           }
 
-      - name: Create or update deployment
+      - name: Create or update deployment (idempotent) + inject secrets
         shell: powershell
         run: |
-          az ml online-deployment create `
-            --file azureml/deployment.yml `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+          $ErrorActionPreference = "Stop"
+          $endpointName = "fragrance-sentiment-endpoint"
+          $deploymentName = "blue"
 
-      - name: Route 100% traffic to deployment
+          $depExists = $null
+          try {
+            $depExists = az ml online-deployment show `
+              --name $deploymentName `
+              --endpoint-name $endpointName `
+              --resource-group rg-nathan-mpops `
+              --workspace-name mlops-grazvydas `
+              --query name -o tsv 2>$null
+          } catch {}
+
+          if (-not $depExists) {
+            Write-Host "Creating deployment: $deploymentName"
+            az ml online-deployment create `
+              --file azureml/deployment.yml `
+              --resource-group rg-nathan-mpops `
+              --workspace-name mlops-grazvydas `
+              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+          } else {
+            Write-Host "Updating deployment: $deploymentName"
+            az ml online-deployment update `
+              --file azureml/deployment.yml `
+              --resource-group rg-nathan-mpops `
+              --workspace-name mlops-grazvydas `
+              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+          }
+
+      - name: Route 100% traffic to blue
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           az ml online-endpoint update `
             --name fragrance-sentiment-endpoint `
             --resource-group rg-nathan-mpops `
             --workspace-name mlops-grazvydas `
             --traffic blue=100
+
+      - name: Print scoring URI + key
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          az ml online-endpoint show `
+            --name fragrance-sentiment-endpoint `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas `
+            --query scoring_uri -o tsv
+
+          az ml online-endpoint get-credentials `
+            --name fragrance-sentiment-endpoint `
+            --resource-group rg-nathan-mpops `
+            --workspace-name mlops-grazvydas
