@@ -12,7 +12,6 @@ from sklearn.metrics import classification_report, accuracy_score
 import joblib
 
 
-from pathlib import Path
 
 def resolve_input_file(input_path: str) -> str:
     """
