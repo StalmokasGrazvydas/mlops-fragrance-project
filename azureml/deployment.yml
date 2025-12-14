@@ -37,5 +37,5 @@ instance_count: 1
 
 environment_variables:
   INFERENCE_LOG_CONTAINER: inference-logs
-  AZURE_STORAGE_CONNECTION_STRING: ""   # <-- REQUIRED placeholder so --set can patch it
+
 

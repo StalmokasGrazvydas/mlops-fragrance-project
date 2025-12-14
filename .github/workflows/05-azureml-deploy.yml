@@ -64,14 +64,12 @@ jobs:
               --file azureml/deployment.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas `
-              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           } else {
             Write-Host "Updating deployment: $deploymentName"
             az ml online-deployment update `
               --file azureml/deployment.yml `
               --resource-group rg-nathan-mpops `
               --workspace-name mlops-grazvydas `
-              --set environment_variables.AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           }
 
       - name: Route 100% traffic to blue
