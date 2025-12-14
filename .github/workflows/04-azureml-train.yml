@@ -38,21 +38,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Submit training job to Azure ML
+      - name: Wait for job to complete (poll)
         shell: powershell
         run: |
-          $jobName = az ml job create `
-            --file azureml/train-job.yml `
-            --resource-group rg-nathan-mpops `
-            --workspace-name mlops-grazvydas `
-            --query name -o tsv
+          $maxMinutes = 60
+          $sleepSeconds = 20
+          $deadline = (Get-Date).AddMinutes($maxMinutes)
 
-          if (-not $jobName) {
-            throw "Job submission failed: no job name returned."
+          while ((Get-Date) -lt $deadline) {
+            $status = az ml job show `
+              --name $env:JOB_NAME `
+              --resource-group rg-nathan-mpops `
+              --workspace-name mlops-grazvydas `
+              --query status -o tsv
+
+            Write-Host "Job $env:JOB_NAME status: $status"
+
+            if ($status -in @("Completed", "Failed", "Canceled")) { break }
+
+            Start-Sleep -Seconds $sleepSeconds
           }
 
-          "JOB_NAME=$jobName" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Host "Submitted Azure ML job: $jobName"
+          if (-not $status) { throw "Could not read job status." }
+          if ($status -ne "Completed") { throw "Azure ML job finished with status: $status" }
 
       - name: Wait for job to complete
         shell: powershell
